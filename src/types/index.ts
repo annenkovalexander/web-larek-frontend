@@ -6,7 +6,7 @@ export type ProductItem = {
     image: string,
     title: string,
     category: string,
-    price: number
+    price: number | null
 }
 
 export type ProductData = {
@@ -69,14 +69,14 @@ export type ProductCartItemSettings = {
     itemDeletButton: string
 }
 
-export type OrderStep1Settings = {
+export type PaymentTypeAndAddressFormSettings = {
     formName: string,
     cardButtonName: string,
     cashButtonName: string,
     addressFieldName: string
 }
 
-export type OrderStep2Settings = {
+export type PhoneAndEmailFormSettings = {
     formName: string,
     emailFieldName: string,
     phoneFieldName: string

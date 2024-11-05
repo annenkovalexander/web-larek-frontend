@@ -128,7 +128,7 @@ yarn build
     - телефон пользователя: string
     - адрес доставки: string
     - общая сумма заказа: number
-    - массив выбранных товаров: ProductItem[]
+    - массив идентификаторов товаров: string[]
 
 Тип OrderResult:
 
@@ -185,7 +185,7 @@ type ProductDataEvent = {
     - телефон пользователя: string
     - адрес доставки: string
     - общая сумма заказа: number
-    - массив выбранных товаров: ProductItem[]
+    - массив идентификаторов товаров: string[]
 
 
 Класс содержит set-функции для следующих параметров. В скобках указаны события, которые вызываются при изменений эти параметров:
@@ -384,7 +384,7 @@ type ProductOpenEvent = {
 }
 ```
 
-### Класс _OrderStep1_
+### Класс _PaymentTypeAndAddressForm_
 
 Класс наследует класс Component, входищий тип ShoppingCartProductsList. 
 
@@ -413,7 +413,7 @@ type OrderNextType = {
 }
 ```
 
-### Класс _OrderStep2_
+### Класс _PhoneAndEmailForm_
 
 Класс наследует класс Component, входищий тип ShoppingCartProductsList. 
 
