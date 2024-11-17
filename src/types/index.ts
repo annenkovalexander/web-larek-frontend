@@ -10,17 +10,24 @@ export type ProductItem = {
 }
 
 export type ProductData = {
-    productsQuantity: number,
-    productItems: ProductItem[]
+    total: number,
+    items: ProductItem[]
 }
 
-export type ProductCart = {
+export enum PaymentType {
+    'online',
+    'offline'
+}
+
+
+export type ShoppingCartProductsList = {
+    paymentType?: PaymentType,
+    userEmail?: string,
+    userPhone?: string | number,
+    deliveryAddress?: string
     chosenProductsNumber: number,
-    chosenProducts: ProductItem[],
-    paymentType: boolean,
-    userEmail: string,
-    userPhone: string | number,
-    deliveryAddress: string
+    chosenProducts?: string[],
+    totalSum?: number
 }
 
 export type ProductOrderResult = {
@@ -29,16 +36,46 @@ export type ProductOrderResult = {
     error?: string
 }
 
-export interface IProductAPI {
-    getProductList: () => Promise<ProductItem[]>,
-    getProductInfo: (id:string) => Promise<ProductItem>,
-    orderProducts: (order: ProductCart) => Promise<ProductOrderResult>
+export interface ILarekAPI {
+    getProductList: (uri: string) => Promise<ProductData | object>,
+    getProductInfo: (uri: string, id:string) => Promise<ProductItem | object>,
+    orderProducts: (uri: string, order: ShoppingCartProductsList) => Promise<ProductOrderResult | object>
 }
+
+//Типы модели отображения
+
+export type PageComponentData = {
+    productQuanity: number,
+    productCardsList: HTMLElement[]
+}
+
+export type ProductCardComponentData = {
+    productId: string,
+    productDescription: string,
+    productImageSourceUri: string,
+    productName: string,
+    productCategory: string,
+    productPrice: number 
+}
+
+export type ModalComponentData = {
+    contentElement: HTMLElement,
+    openFlag: boolean
+}
+
+export type ShoppingCartComponentData = {
+    productsList: Partial<ProductItem>[],
+    totalSum: number
+}
+
+//Типы настроек
 
 export type PageSettings = {
     wrapper: string,
-    headerBusketCounter: string,
-    gallery: string
+    productCardsContainer: string,
+    shoppingCartContainer: string,
+    shoppingCartButton: string,
+    shoppingCartProductQuantity: string
 }
 
 export type GalleryItemSettings = {
@@ -52,18 +89,30 @@ export type GalleryItemSettings = {
 export type ModalWindowSettings = {
     modal: string,
     modalCloseButton: string,
+    modalActiveClass: string,
     modalContent: string
+}
+
+export type CardFullSettings = {
+    cardFull: string,
+    cardImage: string,
+    cardCategory: string,
+    cardTitle: string,
+    cardText: string,
+    cardButton: string,
+    cardPrice: string
 }
 
 export type ShoppingCartSettings = {
     basket: string,
     basketList: string,
-    basketPrice: string
+    basketPrice: string,
+    basketButton: string
 }
 
 export type ProductCartItemSettings = {
     basketItem: string,
-    basketItemIndex: number,
+    basketItemIndex: string,
     cardTitle: string,
     cardPrice: string,
     itemDeletButton: string
@@ -102,8 +151,8 @@ export type ProductDataEvent = {
     productData: ProductData
 }
 
-export type ProductOpenEvent = {
-    cardId: number
+export type ShoppingCartAdd = {
+    productId: string
 }
 
 export type ModalType = {

@@ -44,6 +44,7 @@
     height: 390px;
     aspect-ratio: 1;
     margin: 3.75rem;
+    backdrop-filter: blur(10.405160903930664px);
   }
   &__title {
     font-size: $titleFontSize;

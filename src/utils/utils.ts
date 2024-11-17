@@ -10,6 +10,9 @@ export function isEmpty(value: any): boolean {
     return value === null || value === undefined;
 }
 
+export function log(name: string, value: object | string | number): void{
+    return console.log(name + ": " + JSON.stringify(value));
+}
 export type SelectorCollection<T> = string | NodeListOf<Element> | T[];
 
 export function ensureAllElements<T extends HTMLElement>(selectorElement: SelectorCollection<T>, context: HTMLElement = document as unknown as HTMLElement): T[] {
