@@ -30,6 +30,7 @@ export abstract class Component<T> {
         }
     }
 
+
     // Скрыть
     protected setHidden(element: HTMLElement) {
         element.style.display = 'none';

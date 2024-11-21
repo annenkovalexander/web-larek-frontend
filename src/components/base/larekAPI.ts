@@ -1,4 +1,4 @@
-import { ILarekAPI, ShoppingCartProductsList, ProductData, ProductItem, ProductOrderResult } from "../../types";
+import { ILarekAPI, ShoppingCartProductsList, ProductData, ProductItem, ProductOrderResult, OrderBodyData } from "../../types";
 import { Api } from "./api";
 import { log } from "../../utils/utils";
 
@@ -16,7 +16,7 @@ export class LarekAPI extends Api implements ILarekAPI {
         return this.get(uri+"/"+id);
     }
 
-    orderProducts(uri:string, order: ShoppingCartProductsList): Promise<ProductOrderResult | object> {
+    orderProducts(uri:string, order: OrderBodyData): Promise<ProductOrderResult | object> {
         return this.post(uri, order, 'POST');
     }
 }

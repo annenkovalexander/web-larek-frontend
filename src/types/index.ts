@@ -30,16 +30,24 @@ export type ShoppingCartProductsList = {
     totalSum?: number
 }
 
+export type OrderBodyData = {
+    payment: string,
+    email: string,
+    phone: string | number,
+    address: string
+    total: number,
+    items: string[]
+}
+
 export type ProductOrderResult = {
     id?: string,
-    total?: number,
-    error?: string
+    total?: number
 }
 
 export interface ILarekAPI {
     getProductList: (uri: string) => Promise<ProductData | object>,
     getProductInfo: (uri: string, id:string) => Promise<ProductItem | object>,
-    orderProducts: (uri: string, order: ShoppingCartProductsList) => Promise<ProductOrderResult | object>
+    orderProducts: (uri: string, order: OrderBodyData) => Promise<ProductOrderResult | object>
 }
 
 //Типы модели отображения
@@ -119,20 +127,47 @@ export type ProductCartItemSettings = {
 }
 
 export type PaymentTypeAndAddressFormSettings = {
+    formClass: string,
     formName: string,
-    cardButtonName: string,
-    cashButtonName: string,
-    addressFieldName: string
+    addressField: string,
+    buttonCardName: string,
+    buttonCashName: string,
+    addressFieldName: string,
+    buttonNext: string,
+    formErrors: string,
+    buttonAltClass: string,
+    buttonAltActiveClass: string
 }
 
 export type PhoneAndEmailFormSettings = {
+    formClass: string,
     formName: string,
     emailFieldName: string,
-    phoneFieldName: string
+    phoneFieldName: string,
+    buttonPay: string,
+    errorField: string
 }
 
 export type OrderStatusSettings = {
-    orderSuccessDescription: string
+    orderStatus: string,
+    orderSuccessDescription: string,
+    buyOnceMoreButton: string
+}
+
+export type OrderElements = {
+    address: HTMLInputElement,
+    cash: HTMLButtonElement,
+    card: HTMLButtonElement
+}
+
+export type PhoneAndEmailElements = {
+    email: HTMLInputElement,
+    phone: HTMLInputElement
+}
+
+export type PhoneChangeEventData = {
+    userPhone: string | number,
+    userEmail: string
 }
 
 //События и типы данных, передаваемых в событии
@@ -160,7 +195,7 @@ export type ModalType = {
 }
 
 export type OrderNextType = {
-    paymentType: boolean,
+    paymentType: PaymentType,
     deliveryAddress: string
 }
 
@@ -171,4 +206,12 @@ export type OrderData = {
     phone: string,
     deliveryAddress: string,
     productListIds: string[]
+}
+
+export type AddressChangeEventData = {
+    address: string
+}
+
+export type PaymentTypeEventData = {
+    paymentType: PaymentType
 }

@@ -1,30 +1,35 @@
 import { Model } from "./Model";
-import { PaymentType, ProductData, ProductDataEvent, ShoppingCartProductsList } from "../../types";
+import { PaymentType, ProductData, ShoppingCartProductsList } from "../../types";
 import { IEvents } from "./events";
 
+import { log } from "../../utils/utils";
+
 export class ProductListModel extends Model<ProductData>{
-    protected productData: ProductData;
+    protected _productData: ProductData;
 
     constructor(data: ProductData, events: IEvents){
         super(data, events);
-        console.log("consturctor ProductListModel: " + JSON.stringify(this));
+    }
+
+    set productData(data: ProductData){
+        this._productData = data;
+        const eventData: ProductData = this._productData;
+        this.emitChanges('productData:change', eventData);
     }
     
-    public setProductData(data: ProductData){
-        this.productData = data;
-        const eventData: ProductData = this.productData;
-        this.emitChanges('productData:change', eventData);
+    updateData(data: ProductData){
+        Object.assign(this, {productData: data});
     }
 }
 
 export class ShoppingCartProductListModel extends Model<ShoppingCartProductsList> {
-    protected paymentType?: PaymentType;
-    protected userEmail?: string;
-    protected userPhone?: string | number;
-    protected deliveryAddress?: string;
-    protected chosenProductsNumber: number;
-    protected chosenProducts?: string[];
-    protected totalSum?: number
+    protected _paymentType: PaymentType;
+    protected _userEmail: string;
+    protected _userPhone: string | number;
+    protected _deliveryAddress: string;
+    protected _chosenProductsNumber: number;
+    protected _chosenProducts: string[];
+    protected _totalSum: number
 
     constructor(data: ShoppingCartProductsList, events: IEvents){
         super(data, events);
@@ -34,15 +39,41 @@ export class ShoppingCartProductListModel extends Model<ShoppingCartProductsList
         Object.assign(this, data);
     }
 
+    set paymentType(value: PaymentType){
+        this._paymentType = value;
+    }
+
+    set userEmail(value: string){
+        this._userEmail = value;
+    }
+    set userPhone(value: string | number){
+        this._userPhone = value;
+    }
+    set deliveryAddress(value: string){
+        this._deliveryAddress = value;
+    }
+    set chosenProductsNumber(value: number){
+        this._chosenProductsNumber = value;
+    }
+    set chosenProducts(value: string[]){
+        this._chosenProducts = value;
+        this._chosenProductsNumber = this._chosenProducts.length;
+        this.events.emit('chosenProducts:change', {chosenProducts: this._chosenProducts, chosenProductsNumber: this._chosenProductsNumber})
+    }
+    set totalSum(value: number){
+        this._totalSum = value;
+    }
+
+    
     getShoppingCart():ShoppingCartProductsList {
         return {
-            paymentType: this.paymentType,
-            userEmail: this.userEmail,
-            userPhone: this.userPhone,
-            deliveryAddress: this.deliveryAddress,
-            chosenProductsNumber: this.chosenProductsNumber,
-            chosenProducts: this.chosenProducts,
-            totalSum: this.totalSum
+            paymentType: this._paymentType,
+            userEmail: this._userEmail,
+            userPhone: this._userPhone,
+            deliveryAddress: this._deliveryAddress,
+            chosenProductsNumber: this._chosenProductsNumber,
+            chosenProducts: this._chosenProducts,
+            totalSum: this._totalSum
         }
     }
 }

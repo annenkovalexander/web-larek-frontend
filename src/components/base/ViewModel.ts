@@ -1,24 +1,19 @@
-import { CardFullSettings, GalleryItemSettings, ModalComponentData, ModalWindowSettings, PageComponentData, PageSettings, ProductCardComponentData, ProductCartItemSettings, ProductItem, ShoppingCartComponentData, ShoppingCartSettings } from "../../types";
+import { CardFullSettings, GalleryItemSettings, ModalComponentData, ModalWindowSettings, OrderElements, OrderStatusSettings, PageComponentData, PageSettings, PaymentType, PaymentTypeAndAddressFormSettings, PhoneAndEmailElements, PhoneAndEmailFormSettings, ProductCardComponentData, ProductCartItemSettings, ProductItem, ShoppingCartComponentData, ShoppingCartProductsList, ShoppingCartSettings } from "../../types";
 import { ensureElement } from "../../utils/utils";
 import { Component } from "./Component";
-import { log } from "../../utils/utils";
-import { CDN_URL } from "../../utils/constants";
+import { CDN_URL, paymentTypeAndAddressFormSettings } from "../../utils/constants";
 import { IEvents } from "./events";
 
 const detectClickOutside = (element: HTMLElement, activeClass: string) => {
-
-    
     const handleClickOutside = (event: any) => {
         if (element.classList.contains(activeClass) && event.target.contains(element)){
             element.classList.remove(activeClass);
         }
     }
     document.addEventListener('click', handleClickOutside)
-
     return () => {
         document.removeEventListener('click', handleClickOutside);
     }
-    
 }
 
 const getPriceText = (value: number | string | null) => value ? value.toLocaleString().replace(/,/g, ' ') + ' синапсов': 'Бесценно'
@@ -145,7 +140,6 @@ export class ModalComponent extends Component<ModalComponentData> {
             
         else if (!this._openFlag && this.container.classList.contains(this._modalWindowSettings.modalActiveClass)){
             this.container.classList.remove(this._modalWindowSettings.modalActiveClass);
-            this._contentElement.removeChild(this._contentElementChild);
         }
             
     }
@@ -221,16 +215,22 @@ export class ShoppingCart extends Component<ShoppingCartComponentData> {
         this._basketPriceElement = ensureElement<HTMLElement>(shoppingCartSettings.basketPrice, container);
         this._basketButtonElement = ensureElement<HTMLButtonElement>(shoppingCartSettings.basketButton, container);
         this._basketButtonElement.addEventListener('click', () => events.emit('shoppingCart:order'));
+        this._basketButtonElement.disabled = true;
     }
 
     set productsList(value: HTMLElement[]){
-        Array.from(value).forEach(element => {
-            this._basketListContainerElement.append(element);
-        });   
+        let children = Array.from(this._basketListContainerElement.children);
+        children.forEach((element, index) => this._basketListContainerElement.removeChild(element));
+        Array.from(value).forEach(element => this._basketListContainerElement.append(element));
+        this._basketButtonElement.disabled = !(value.length > 0);
     }
 
     set totalSum(value: number){
         this.setText(this._basketPriceElement, getPriceText(value));
+    }
+
+    getContainer(){
+        return this.container;
     }
 }
 
@@ -257,6 +257,7 @@ export class ProductCartItem extends Component<Partial<ProductItem> & {listNumbe
 
     set id(value: string){
         this._productId = value;
+        this.container.setAttribute("id", this._productId);
     }
 
     set listNumber(value: number) {
@@ -268,6 +269,145 @@ export class ProductCartItem extends Component<Partial<ProductItem> & {listNumbe
     }
 
     set price(value: string) {
-        this.setText(this._priceElement, value);
+        this.setText(this._priceElement, getPriceText(value));
+    }
+}
+
+export class PaymentTypeAndAddressForm extends Component<Partial<ShoppingCartComponentData>> {
+    protected _paymentType: PaymentType;
+    protected _deliveryAddress: string;
+    protected _buttonElement: HTMLButtonElement;
+    protected _formElement: HTMLFormElement;
+    protected _addressField: HTMLInputElement;
+    protected _errorElement: HTMLElement;
+    protected _buttonCardElement: HTMLButtonElement;
+    protected _buttonCashElement: HTMLElement;
+
+
+    constructor(protected readonly container: HTMLFormElement, paymentTypeAndAddressFormSettings: PaymentTypeAndAddressFormSettings, events: IEvents){
+        super(container);
+        this._buttonElement = ensureElement<HTMLButtonElement>(paymentTypeAndAddressFormSettings.buttonNext, container);
+        const elements = container.elements as HTMLFormControlsCollection & OrderElements;
+        this._addressField = elements['address'] as HTMLInputElement;
+        this._addressField.addEventListener('input', (eventData:Event)=>events.emit('address:change', {address: this._addressField.value, paymentType: this._paymentType}));
+        this._buttonCardElement = elements['card'] as HTMLButtonElement;
+        this._buttonCashElement = elements['cash'] as HTMLButtonElement;
+        this._errorElement = ensureElement<HTMLElement>(paymentTypeAndAddressFormSettings.formErrors, container);
+        this._buttonCardElement.addEventListener('click', () => events.emit('paymentType:change', {address: this._addressField.value, paymentType: PaymentType['online']}));
+        this._buttonCashElement.addEventListener('click', () => events.emit('paymentType:change', {address: this._addressField.value, paymentType: PaymentType['offline']}));
+        this.container.addEventListener('submit', (event) => {
+            event.preventDefault();
+            events.emit('order:next', {deliveryAddress: this._deliveryAddress, paymentType: this._paymentType});
+            this.container.reset();
+            this._buttonElement.disabled = true;
+            if (this._paymentType === 0){
+                this._buttonCardElement.classList.remove(paymentTypeAndAddressFormSettings.buttonAltActiveClass);
+                this._buttonCardElement.classList.add(paymentTypeAndAddressFormSettings.buttonAltClass);
+            } else {
+                this._buttonCashElement.classList.remove(paymentTypeAndAddressFormSettings.buttonAltActiveClass);
+                this._buttonCashElement.classList.add(paymentTypeAndAddressFormSettings.buttonAltClass);
+            }      
+        });
+    }
+
+    formValidate(address: string, paymentType: PaymentType){
+        this._deliveryAddress = address;
+        this._paymentType = paymentType;
+        this._buttonElement.disabled = !(address.length > 0 && Boolean(PaymentType[paymentType]));
+        if (this._buttonElement.disabled){
+            this.setText(this._errorElement, 'Подумай, ты точно хочешь идти дальше...');
+        } else {
+            this.setText(this._errorElement, '');
+        }
+    }
+
+    toggleButtons(paymentType: PaymentType){
+        this._paymentType = paymentType;
+        if (paymentType === 0){
+            this._buttonCardElement.classList.remove(paymentTypeAndAddressFormSettings.buttonAltClass);
+            this._buttonCardElement.classList.add(paymentTypeAndAddressFormSettings.buttonAltActiveClass);
+            this._buttonCashElement.classList.add(paymentTypeAndAddressFormSettings.buttonAltClass);
+            this._buttonCashElement.classList.remove(paymentTypeAndAddressFormSettings.buttonAltActiveClass);
+        } else if (paymentType === 1){
+            this._buttonCardElement.classList.add(paymentTypeAndAddressFormSettings.buttonAltClass);
+            this._buttonCardElement.classList.remove(paymentTypeAndAddressFormSettings.buttonAltActiveClass);
+            this._buttonCashElement.classList.remove(paymentTypeAndAddressFormSettings.buttonAltClass);
+            this._buttonCashElement.classList.add(paymentTypeAndAddressFormSettings.buttonAltActiveClass);
+        }
+    }
+
+    getContainer(){
+        return this.container;
+    }
+}
+
+export class PhoneAndEmailForm extends Component<Partial<ShoppingCartProductsList> & {errorText?: string}>{
+    protected _userPhone: string | number;
+    protected _userEmail: string;
+    protected _userPhoneElement: HTMLInputElement;
+    protected _userEmailElement: HTMLInputElement;
+    protected _buttonPayElement: HTMLButtonElement;
+    protected _errorElement: HTMLElement;
+
+
+    constructor(protected readonly container: HTMLFormElement, phoneAndEmailFormSettings: PhoneAndEmailFormSettings, events: IEvents){
+        super(container);
+        this._buttonPayElement = ensureElement<HTMLButtonElement>(phoneAndEmailFormSettings.buttonPay, container);
+        const elements = container.elements as HTMLFormControlsCollection & PhoneAndEmailElements;
+        this._userPhoneElement = elements['phone'] as HTMLInputElement;
+        this._userEmailElement = elements['email'] as HTMLInputElement;
+        this._userPhoneElement.addEventListener('input', () => events.emit("phone:change", {userPhone: this._userPhoneElement.value, userEmail: this._userEmailElement.value}));
+        this._userEmailElement.addEventListener('input', () => events.emit("email:change", {userPhone: this._userPhoneElement.value, userEmail: this._userEmailElement.value}));
+        this._errorElement = ensureElement<HTMLElement>(phoneAndEmailFormSettings.errorField, container);
+        this.container.addEventListener('submit', (event) => {
+            event.preventDefault();
+            events.emit('order:pay', {userEmail: this._userEmail, userPhone: this._userPhone});
+            this.container.reset();
+            this._buttonPayElement.disabled = true;
+        })
+    }
+
+    validateForm(userPhone: string | number, userEmail: string){
+        this._userPhone = userPhone;
+        this._userEmail = userEmail;
+        let userPhoneDigitsList = String(userPhone).split("");
+        userPhoneDigitsList = userPhoneDigitsList.filter((letter:string)=> letter.trim() && !isNaN(Number(letter)));
+        const patternCheck = /[^a-zа-яё ]/iu.test(String(userPhone));
+        const validationResult = userEmail.includes("@") && userEmail.split("@").length >= 2 && userEmail.split("@")[0] && userEmail.split("@")[1] && patternCheck && userPhoneDigitsList.length > 10;
+        this._buttonPayElement.disabled = !validationResult;
+        if (this._buttonPayElement.disabled)
+            this.setText(this._errorElement, "Всё заполняй или уходи");
+        else
+            this.setText(this._errorElement, "");
+    }
+
+    set errorText(value:string) {
+        this.setText(this._errorElement, value);
+    }
+
+    getContainer(){
+        return this.container;
+    }
+}
+
+export class OrderStatus extends Component<Partial<ShoppingCartProductsList>>{
+    protected _decriptionElement: HTMLElement;
+    protected _totalSumElement: HTMLElement;
+    protected _buyOnceMoreButton: HTMLButtonElement;
+
+
+    constructor(protected readonly container: HTMLElement, orderStatusSettings: OrderStatusSettings, events: IEvents){
+        super(container);
+        this._decriptionElement = ensureElement<HTMLElement>(orderStatusSettings.orderSuccessDescription, container);
+        this._buyOnceMoreButton = ensureElement<HTMLButtonElement>(orderStatusSettings.buyOnceMoreButton, container);
+        this._buyOnceMoreButton.addEventListener('click', () => events.emit('order: onceMore'));
+    }
+
+    set totalSum (value:string){
+        this.setText(this._decriptionElement, `Списано ${value} синапсов`);
+    }
+
+    getContainer(){
+        return this.container;
     }
 }

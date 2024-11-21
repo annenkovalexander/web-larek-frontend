@@ -105,7 +105,7 @@ yarn build
 
     - метод getAllProductItems(): возвращет Promise-объект типа ProductList (список всех товаров, доступных к продаже). Использует метод get родительского класса Api
     - метод getProductInfo(): возращает Promise-объект с данными по товару. Данные имеют тип ProductItem. Использует метод get родительского класса. Идентификатор товара прибавляется как строка к URI метода для получения данных по товарам.
-    - метод orderProducts(): выполняет заказ содержащихся в корзине товаров в автоматизированной системе продаж. Метод принимает на вход список товаров в корзине. Список имеет тип ShoppingCartProductsList. Метод возвращает Promise типа OrderResult. Вызыает метод родительского класса post c типом операции POST.
+    - метод orderProducts(): выполняет заказ содержащихся в корзине товаров в автоматизированной системе продаж. Метод принимает на вход список товаров в корзине. Список имеет тип ShoppingCartProductsList. Метод возвращает Promise типа ProductOrderResult. Вызыает метод родительского класса post c типом операции POST.
 
 Тип ProductData:
 
@@ -130,7 +130,7 @@ yarn build
     - общая сумма заказа: number
     - массив идентификаторов товаров: string[]
 
-Тип OrderResult:
+Тип ProductOrderResult:
 
     - идентификатор заказа: string
     - итоговая сумма заказа: number
@@ -165,13 +165,7 @@ yarn build
 
     - метод set productData(data: ProductList). Вызывает событие productData:change
 
-Тип передаваемых данных:
-
-```
-type ProductDataEvent = {
-    productData: productData
-}
-```
+Тип передаваемых данных: ProductData
 
 
 ### Класс _ShoppingCartProductListModel_
@@ -186,16 +180,17 @@ type ProductDataEvent = {
     - адрес доставки: string
     - общая сумма заказа: number
     - массив идентификаторов товаров: string[]
+    - количество выбранных товаров: number
 
 
 Класс содержит set-функции для следующих параметров. В скобках указаны события, которые вызываются при изменений эти параметров:
 
-    1. Количество выбранных товаров (shoppingCart: quantityChange)
-    2. Вид платежа (shoppingCart: paymentTypeChange)
-    3. Почта пользователя (shoppingCart: userEmailChange)
-    4. Телефон пользователя (shoppingCart: userPhoneChange)
-    5. Адрес доставки (shoppingCart: userAddressChange)
-    6. Массив товаров: ProductList (shoppingCart: productsChange)
+    1. Количество выбранных товаров ()
+    2. Вид платежа ()
+    3. Почта пользователя ()
+    4. Телефон пользователя ()
+    5. Адрес доставки ()
+    6. Массив товаров (chosenProducts: change) 
 
 Остальные методы класса:
 
