@@ -31,12 +31,17 @@ const orderStatusComponent = new OrderStatus(orderStatusTemplate.content.querySe
 
 
 
-const getProductData = (productIds: string[]):Promise<ProductItem[] | void> => {
-    let promisesList: Promise<ProductItem | object>[] = [];
-    productIds.forEach((productId:string) => {
-        promisesList.push(larekAPI.getProductInfo(PRODUCT_URI, productId));
-    })
-    return Promise.all(promisesList).then((data: ProductItem[]) => data).catch((err) => log("getProductData error", err));
+const getProductData = (productIds: string[]): ProductItem[] => {
+    const allProducts = productDataModel.getProductList();
+    let productItems: ProductItem[] = [];
+    productIds.forEach((id:string) => {
+        let filteredData: ProductItem[] = allProducts.filter((productItem: ProductItem) => {
+            return productItem.id == id;
+        });
+        if (filteredData && filteredData.length === 1)
+            productItems.push(filteredData[0]);
+    });
+    return productItems;
 }
 
 const orderData = (orderBodyData: OrderBodyData): Promise<ProductOrderResult | void> => {
@@ -107,25 +112,23 @@ events.on('chosenProducts:change', (chosenProductsData: Partial<ShoppingCartProd
             totalSum: 0
         })
     } else{
-        getProductData(chosenProductsData.chosenProducts).then((data: ProductItem[]) => {
-            if (data && typeof data === 'object' && Array.isArray(data)){
-                let chosenProductsComponents: HTMLElement[] = [];
-                let totalSum: number = 0;
-                data.forEach((productItem: ProductItem, index: number) => {
-                    const productCartItemElement = productCartItemTemplate.content.querySelector(productCartItemSettings.basketItem).cloneNode(true) as HTMLElement;
-                    const productCartItem = new ProductCartItem(productCartItemElement, productCartItemSettings, events);
-                    chosenProductsComponents.push(productCartItem.render(Object.assign(productItem, {listNumber: index+1})));
-                    totalSum += productItem.price ? productItem.price : 0;
-                });
-                shoppingCartComponent.render({
-                    productsList: chosenProductsComponents,
-                    totalSum: totalSum
-                });
-                shoppingCartDataModel.updateData({
-                    totalSum: totalSum
-                })
-            }
-        }).catch((err) => log("chosenProducts:change. Данные получить не удалось. Возникла ошибка", err));
+        const data = getProductData(chosenProductsData.chosenProducts);
+        log("chosenProducts:change", data);
+        let chosenProductsComponents: HTMLElement[] = [];
+        let totalSum: number = 0;
+        data.forEach((productItem: ProductItem, index: number) => {
+            const productCartItemElement = productCartItemTemplate.content.querySelector(productCartItemSettings.basketItem).cloneNode(true) as HTMLElement;
+            const productCartItem = new ProductCartItem(productCartItemElement, productCartItemSettings, events);
+            chosenProductsComponents.push(productCartItem.render(Object.assign(productItem, {listNumber: index+1})));
+            totalSum += productItem.price ? productItem.price : 0;
+        });
+        shoppingCartComponent.render({
+            productsList: chosenProductsComponents,
+            totalSum: totalSum
+        });
+        shoppingCartDataModel.updateData({
+            totalSum: totalSum
+        })
     }
 })
 
@@ -200,7 +203,11 @@ events.on('order:pay', (data: PhoneChangeEventData) => {
         modalComponent.render({
             contentElement: orderStatusComponent.render({totalSum}),
             openFlag: true
-        })  
+        })
+        shoppingCartDataModel.updateData({
+            chosenProductsNumber: 0,
+            chosenProducts: []
+        });
     }).catch((err: string) => {
         phoneAndEmailForm.render({
             errorText: err
@@ -209,10 +216,6 @@ events.on('order:pay', (data: PhoneChangeEventData) => {
 });
 
 events.on('order: onceMore', () => {
-    shoppingCartDataModel.updateData({
-        chosenProductsNumber: 0,
-        chosenProducts: []
-    });
     modalComponent.render({
         openFlag: false
     });

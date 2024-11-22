@@ -20,6 +20,10 @@ export class ProductListModel extends Model<ProductData>{
     updateData(data: ProductData){
         Object.assign(this, {productData: data});
     }
+
+    getProductList(){
+        return this._productData.items;
+    }
 }
 
 export class ShoppingCartProductListModel extends Model<ShoppingCartProductsList> {

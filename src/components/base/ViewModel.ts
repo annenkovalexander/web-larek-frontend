@@ -157,7 +157,7 @@ export class ProductFullInfo extends Component<ProductItem> {
     protected _cardTitleElement: HTMLElement;
     protected _cardTextElement: HTMLElement;
     protected _cardPriceElement: HTMLElement;
-    protected _cardButtonElement: HTMLElement;
+    protected _cardButtonElement: HTMLButtonElement;
 
     constructor (protected readonly container: HTMLElement, cardFullSettings: CardFullSettings, events: IEvents){
         super(container);
@@ -166,7 +166,7 @@ export class ProductFullInfo extends Component<ProductItem> {
         this._cardTitleElement = ensureElement<HTMLElement>(cardFullSettings.cardTitle, container);
         this._cardTextElement = ensureElement<HTMLElement>(cardFullSettings.cardText, container);
         this._cardPriceElement = ensureElement<HTMLElement>(cardFullSettings.cardPrice, container);
-        this._cardButtonElement = ensureElement<HTMLElement>(cardFullSettings.cardButton, container);
+        this._cardButtonElement = ensureElement<HTMLButtonElement>(cardFullSettings.cardButton, container);
         this._cardButtonElement.addEventListener('click', () => events.emit('shoppingCart:add', {
             productId: this._productId
         }))
