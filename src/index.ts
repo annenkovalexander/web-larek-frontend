@@ -1,13 +1,24 @@
 import './scss/styles.scss';
-
-import { ProductListModel, ShoppingCartProductListModel } from './components/base/DataModel';
+import { ProductListModel, ShoppingCartProductListModel, appState, convertToOrderBodyData } from './components/base/DataModel';
 import { EventEmitter } from './components/base/events';
-import { ProductData, ProductItem, ShoppingCartProductsList, ShoppingCartAdd, AddressChangeEventData, PaymentType, PaymentTypeEventData, OrderNextType, PhoneChangeEventData, ProductOrderResult, OrderBodyData } from './types';
+import { ProductData, ProductItem, ShoppingCartProductsList, AddressChangeEventData, PaymentTypeEventData, PhoneChangeEventData, ProductOrderResult, OrderBodyData } from './types';
 import { LarekAPI } from './components/base/larekAPI';
-import { convertToOrderBodyData, log } from './utils/utils';
+import { log } from './utils/utils';
 import { API_URL, PRODUCT_URI, ORDER_URI, paymentTypeAndAddressFormSettings, phoneAndEmailFormSettings } from './utils/constants';
 import { pageSettings, productCardSettings, modalWindowSettings, cardFullSettings, shoppingCartSettings, productCartItemSettings, orderStatusSettings } from './utils/constants';
-import { ModalComponent, OrderStatus, Page, PaymentTypeAndAddressForm, PhoneAndEmailForm, ProductCard, ProductCartItem, ProductFullInfo, ShoppingCart } from './components/base/ViewModel';
+
+
+import { ShoppingCart } from './components/ShoppingCart';
+import { ProductFullInfo } from './components/ProductFullInfo';
+import { ProductCartItem } from './components/ProductCartItem';
+import { ProductCard } from './components/ProductCard';
+import { PhoneAndEmailForm } from './components/PhoneAndEmailForm';
+import { PaymentTypeAndAddressForm } from './components/PaymentTypeAndAddressForm';
+import { Page } from './components/Page';
+import { ModalComponent } from './components/ModalWindow';
+import { OrderStatus } from './components/OrderStatus';
+
+
 
 
 const events = new EventEmitter();
@@ -63,22 +74,26 @@ const productDataModel = new ProductListModel(productListInitialState, events);
 const shoppingCartDataModel = new ShoppingCartProductListModel(shoppingCartInitialState, events);
 const larekAPI = new LarekAPI(API_URL);
 
-larekAPI.getProductList(PRODUCT_URI).then((data:ProductData)=>productDataModel.updateData(data));
+larekAPI.getProductList(PRODUCT_URI).then((data:ProductData)=>productDataModel.updateData(data)).catch(err => log("Ошибка получения данных", err));
 
 
 events.on('productData:change', (data: ProductData)=>{
     let cardsList: HTMLElement[] = [];
     data.items.forEach((item: ProductItem) => {
         const cardComponent = cardComponentTemplate.content.querySelector(productCardSettings.galleryItem).cloneNode(true) as HTMLElement;
-        cardsList.push(new ProductCard(cardComponent, productCardSettings, events).render(item))
+        const updatedCardComponent = new ProductCard(cardComponent, productCardSettings, events).render(item);
+        updatedCardComponent.addEventListener('click', () => events.emit('product:open', item));
+        cardsList.push(updatedCardComponent);
     });
     pageComponent.render({
         productCardsList: cardsList
     })
 });
 
-events.on('product:open', (data: ProductItem) => {
+events.on('product:open', (data: ProductItem & {buttonStatus: boolean}) => {
     const productInfoContent = fullProductInfoTemplate.content.querySelector(cardFullSettings.cardFull).cloneNode(true) as HTMLElement;
+    data.buttonStatus = shoppingCartDataModel.getButtonStatus(data.id);
+    appState.activeId = data.id;
     const productFullInfo = new ProductFullInfo(productInfoContent, cardFullSettings, events).render(data);
     modalComponent.render({
         contentElement: productFullInfo,
@@ -86,34 +101,19 @@ events.on('product:open', (data: ProductItem) => {
     })
 });
 
-events.on('shoppingCart:add', (data: ShoppingCartAdd) => {
-    const shoppingCartData = shoppingCartDataModel.getShoppingCart();
-    shoppingCartData.chosenProducts = shoppingCartData.chosenProducts || [];
-    if (shoppingCartData.chosenProducts.indexOf(data.productId) === -1){
-        shoppingCartData.chosenProducts.push(data.productId);
-        shoppingCartData.chosenProductsNumber = shoppingCartData.chosenProducts.length;
-        shoppingCartDataModel.updateData({
-            chosenProducts: shoppingCartData.chosenProducts,
-            chosenProductsNumber: shoppingCartData.chosenProducts.length
-        })
-        pageComponent.render({
-            productQuanity: shoppingCartData.chosenProductsNumber
-        });
-    }
+events.on('shoppingCart:add', () => {
+    shoppingCartDataModel.addNewProduct(appState.activeId);
 })
 
 events.on('chosenProducts:change', (chosenProductsData: Partial<ShoppingCartProductsList>) => {
     if (chosenProductsData.chosenProducts.length === 0){
-        pageComponent.render({
-            productQuanity: 0
-        });
+        pageComponent.changeProductQuantity(0);
         shoppingCartComponent.render({
             productsList: [],
             totalSum: 0
         })
     } else{
         const data = getProductData(chosenProductsData.chosenProducts);
-        log("chosenProducts:change", data);
         let chosenProductsComponents: HTMLElement[] = [];
         let totalSum: number = 0;
         data.forEach((productItem: ProductItem, index: number) => {
@@ -129,6 +129,7 @@ events.on('chosenProducts:change', (chosenProductsData: Partial<ShoppingCartProd
         shoppingCartDataModel.updateData({
             totalSum: totalSum
         })
+        pageComponent.changeProductQuantity(chosenProductsData.chosenProductsNumber)
     }
 })
 
@@ -143,17 +144,7 @@ events.on('shoppingCart:open', () => {
 });
 
 events.on('product:delete', (data:Partial<ProductItem>) => {
-    const shoppingCartData = shoppingCartDataModel.getShoppingCart();
-    shoppingCartData.chosenProducts = shoppingCartData.chosenProducts || [];
-    shoppingCartData.chosenProducts = shoppingCartData.chosenProducts.filter((id: string) => data.id && id !== data.id);
-    shoppingCartData.chosenProductsNumber = shoppingCartData.chosenProducts.length;
-    shoppingCartDataModel.updateData({
-        chosenProducts: shoppingCartData.chosenProducts,
-        chosenProductsNumber: shoppingCartData.chosenProducts.length
-    })
-    pageComponent.render({
-        productQuanity: shoppingCartData.chosenProductsNumber
-    });
+    shoppingCartDataModel.deleteProduct(data.id);
 })
 
 events.on('shoppingCart:order', () => {
@@ -164,20 +155,22 @@ events.on('shoppingCart:order', () => {
 })
 
 
-events.on('address:change', (data: AddressChangeEventData & PaymentTypeEventData) => {
-    paymentTypeAndAddressForm.formValidate(data.address, data.paymentType);
+events.on('address:change', (data: AddressChangeEventData) => {
+    shoppingCartDataModel.updateData({
+        deliveryAddress: data.address
+    });
+    paymentTypeAndAddressForm.validateForm(data.address, shoppingCartDataModel.getShoppingCart().paymentType);
 });
 
-events.on('paymentType:change', (data: AddressChangeEventData & PaymentTypeEventData) => {
-    paymentTypeAndAddressForm.formValidate(data.address, data.paymentType);
+events.on('paymentType:change', (data: PaymentTypeEventData) => {
+    shoppingCartDataModel.updateData({
+        paymentType: data.paymentType
+    })
+    paymentTypeAndAddressForm.validateForm(shoppingCartDataModel.getShoppingCart().deliveryAddress, data.paymentType);
     paymentTypeAndAddressForm.toggleButtons(data.paymentType);
 });
 
-events.on('order:next', (data: OrderNextType) => {
-    shoppingCartDataModel.updateData({
-        paymentType: data.paymentType,
-        deliveryAddress: data.deliveryAddress
-    });
+events.on('order:next', () => {
     modalComponent.render({
         contentElement: phoneAndEmailForm.getContainer(),
         openFlag: true
@@ -215,7 +208,7 @@ events.on('order:pay', (data: PhoneChangeEventData) => {
     });
 });
 
-events.on('order: onceMore', () => {
+events.on('close: successOrder', () => {
     modalComponent.render({
         openFlag: false
     });

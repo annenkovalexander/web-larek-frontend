@@ -16,17 +16,6 @@ export function log(name: string, value: object | string | number): void{
     return console.log(name + ": " + JSON.stringify(value));
 }
 
-export function convertToOrderBodyData(data:ShoppingCartProductsList): OrderBodyData{
-    return {
-        payment: PaymentType[data.paymentType],
-        email: data.userEmail,
-        phone: data.userPhone,
-        address: data.deliveryAddress,
-        total: data.totalSum,
-        items: data.chosenProducts
-    }
-}
-
 export type SelectorCollection<T> = string | NodeListOf<Element> | T[];
 
 export function ensureAllElements<T extends HTMLElement>(selectorElement: SelectorCollection<T>, context: HTMLElement = document as unknown as HTMLElement): T[] {

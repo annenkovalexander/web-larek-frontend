@@ -1,8 +1,23 @@
 import { Model } from "./Model";
-import { PaymentType, ProductData, ShoppingCartProductsList } from "../../types";
+import { OrderBodyData, PaymentType, ProductData, ShoppingCartProductsList } from "../../types";
 import { IEvents } from "./events";
 
 import { log } from "../../utils/utils";
+
+export const appState = {
+    activeId: ""
+}
+
+export function convertToOrderBodyData(data:ShoppingCartProductsList): OrderBodyData{
+    return {
+        payment: PaymentType[data.paymentType],
+        email: data.userEmail,
+        phone: data.userPhone,
+        address: data.deliveryAddress,
+        total: data.totalSum,
+        items: data.chosenProducts
+    }
+}
 
 export class ProductListModel extends Model<ProductData>{
     protected _productData: ProductData;
@@ -79,5 +94,25 @@ export class ShoppingCartProductListModel extends Model<ShoppingCartProductsList
             chosenProducts: this._chosenProducts,
             totalSum: this._totalSum
         }
+    }
+
+    getButtonStatus(id: string) {
+        return this._chosenProducts.indexOf(id) === -1;
+    }
+
+    addNewProduct(id: string){
+        if (!Array.isArray(this._chosenProducts))
+            this._chosenProducts = [];
+        if (this._chosenProducts.indexOf(id) === -1){
+            this._chosenProducts.push(id);
+        }
+        this._chosenProductsNumber = this._chosenProducts.length;
+        this.events.emit('chosenProducts:change', {chosenProducts: this._chosenProducts, chosenProductsNumber: this._chosenProductsNumber});
+    }
+
+    deleteProduct(id: string){
+        this._chosenProducts = this._chosenProducts.filter((productId:string) => productId !== id);
+        this._chosenProductsNumber = this._chosenProducts.length;
+        this.events.emit('chosenProducts:change', {chosenProducts: this._chosenProducts, chosenProductsNumber: this._chosenProductsNumber});
     }
 }
