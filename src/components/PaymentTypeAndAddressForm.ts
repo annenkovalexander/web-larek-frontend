@@ -27,7 +27,6 @@ export class PaymentTypeAndAddressForm extends Component<Partial<ShoppingCartCom
         this.container.addEventListener('submit', (event) => {
             event.preventDefault();
             events.emit('order:next');
-            this.container.reset();
             this._buttonElement.disabled = true;
             this._buttonCardElement.classList.remove(paymentTypeAndAddressFormSettings.buttonAltActiveClass);
             this._buttonCardElement.classList.add(paymentTypeAndAddressFormSettings.buttonAltClass);     

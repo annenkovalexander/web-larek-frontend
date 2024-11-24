@@ -22,7 +22,6 @@ export class PhoneAndEmailForm extends Component<Partial<ShoppingCartProductsLis
         this.container.addEventListener('submit', (event) => {
             event.preventDefault();
             events.emit('order:pay');
-            this.container.reset();
             this._buttonPayElement.disabled = true;
         })
     }

@@ -14,7 +14,8 @@ export class ProductFullInfo extends Component<ProductItem & {buttonStatus: bool
     protected _cardPriceElement: HTMLElement;
     protected _cardButtonElement: HTMLButtonElement;
 
-    constructor (protected readonly container: HTMLElement, cardFullSettings: CardFullSettings, events: IEvents){
+    constructor (template: HTMLTemplateElement, cardFullSettings: CardFullSettings, events: IEvents){
+        const container = template.content.querySelector(cardFullSettings.cardFull).cloneNode(true) as HTMLElement;
         super(container);
         this._cardImageElement = ensureElement<HTMLImageElement>(cardFullSettings.cardImage, container);
         this._cardCategoryElement = ensureElement<HTMLElement>(cardFullSettings.cardCategory, container);

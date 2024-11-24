@@ -33,12 +33,14 @@ export class ProductCard extends Component<ProductItem> {
     protected _cardImageElement: HTMLImageElement;
     protected _cardPriceElement: HTMLElement;
 
-    constructor (protected readonly container: HTMLElement, productCardSettings: GalleryItemSettings, events: IEvents){
+    constructor (template: HTMLTemplateElement, productCardSettings: GalleryItemSettings, events: IEvents, handleClick: Function){
+        const container = template.content.querySelector(productCardSettings.galleryItem).cloneNode(true) as HTMLElement;
         super(container);
         this._cardCategoryElement = ensureElement<HTMLElement>(productCardSettings.cardCategory, container);
         this._cardTitleElement = ensureElement<HTMLElement>(productCardSettings.cardTitle, container);
         this._cardImageElement = ensureElement<HTMLImageElement>(productCardSettings.cardImage, container);
         this._cardPriceElement = ensureElement<HTMLElement>(productCardSettings.cardPrice, container);
+        this.container.addEventListener('click', (item) => handleClick(item));
     }
 
 

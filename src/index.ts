@@ -44,9 +44,9 @@ const orderStatusComponent = new OrderStatus(orderStatusTemplate.content.querySe
 
 const getProductData = (productIds: string[]): ProductItem[] => {
     const allProducts = productDataModel.getProductList();
-    let productItems: ProductItem[] = [];
+    const productItems: ProductItem[] = [];
     productIds.forEach((id:string) => {
-        let filteredData: ProductItem[] = allProducts.filter((productItem: ProductItem) => {
+        const filteredData: ProductItem[] = allProducts.filter((productItem: ProductItem) => {
             return productItem.id == id;
         });
         if (filteredData && filteredData.length === 1)
@@ -78,11 +78,10 @@ larekAPI.getProductList(PRODUCT_URI).then((data:ProductData)=>productDataModel.u
 
 
 events.on('productData:change', (data: ProductData)=>{
-    let cardsList: HTMLElement[] = [];
+    const cardsList: HTMLElement[] = [];
     data.items.forEach((item: ProductItem) => {
-        const cardComponent = cardComponentTemplate.content.querySelector(productCardSettings.galleryItem).cloneNode(true) as HTMLElement;
-        const updatedCardComponent = new ProductCard(cardComponent, productCardSettings, events).render(item);
-        updatedCardComponent.addEventListener('click', () => events.emit('product:open', item));
+        const handleClick = () => events.emit('product:open', item);
+        const updatedCardComponent = new ProductCard(cardComponentTemplate, productCardSettings, events, handleClick).render(item);
         cardsList.push(updatedCardComponent);
     });
     pageComponent.render({
@@ -91,10 +90,9 @@ events.on('productData:change', (data: ProductData)=>{
 });
 
 events.on('product:open', (data: ProductItem & {buttonStatus: boolean}) => {
-    const productInfoContent = fullProductInfoTemplate.content.querySelector(cardFullSettings.cardFull).cloneNode(true) as HTMLElement;
     data.buttonStatus = shoppingCartDataModel.getButtonStatus(data.id);
     appState.activeId = data.id;
-    const productFullInfo = new ProductFullInfo(productInfoContent, cardFullSettings, events).render(data);
+    const productFullInfo = new ProductFullInfo(fullProductInfoTemplate, cardFullSettings, events).render(data);
     modalComponent.render({
         contentElement: productFullInfo,
         openFlag: true
@@ -114,12 +112,11 @@ events.on('chosenProducts:change', (chosenProductsData: Partial<ShoppingCartProd
         })
     } else{
         const data = getProductData(chosenProductsData.chosenProducts);
-        let chosenProductsComponents: HTMLElement[] = [];
+        const chosenProductsComponents: HTMLElement[] = [];
         let totalSum: number = 0;
-        data.forEach((productItem: ProductItem, index: number) => {
-            const productCartItemElement = productCartItemTemplate.content.querySelector(productCartItemSettings.basketItem).cloneNode(true) as HTMLElement;
-            const productCartItem = new ProductCartItem(productCartItemElement, productCartItemSettings, events);
-            chosenProductsComponents.push(productCartItem.render(Object.assign(productItem, {listNumber: index+1})));
+        data.forEach((productItem: ProductItem) => {
+            const productCartItem = new ProductCartItem(productCartItemTemplate, productCartItemSettings, events);
+            chosenProductsComponents.push(productCartItem.render(Object.assign(productItem)));
             totalSum += productItem.price ? productItem.price : 0;
         });
         shoppingCartComponent.render({
@@ -188,8 +185,7 @@ events.on('email:change', (data: PhoneChangeEventData) => {
     shoppingCartDataModel.updateData(data);
 });
 
-events.on('order:pay', (data: PhoneChangeEventData) => {
-    shoppingCartDataModel.updateData(data);
+events.on('order:pay', () => {
     const orderBodyData: OrderBodyData = convertToOrderBodyData(shoppingCartDataModel.getShoppingCart());
     orderData(orderBodyData).then((data:ProductOrderResult) => {
         const totalSum = data.total || 0;
@@ -201,6 +197,8 @@ events.on('order:pay', (data: PhoneChangeEventData) => {
             chosenProductsNumber: 0,
             chosenProducts: []
         });
+        phoneAndEmailForm.getContainer().reset();
+        paymentTypeAndAddressForm.getContainer().reset();
     }).catch((err: string) => {
         phoneAndEmailForm.render({
             errorText: err

@@ -1,4 +1,5 @@
 import { ShoppingCartComponentData, ShoppingCartSettings } from "../types";
+import { productCartItemSettings } from "../utils/constants";
 import { ensureElement } from "../utils/utils";
 import { getPriceText } from "./ProductCard";
 import { Component } from "./base/Component";
@@ -20,9 +21,10 @@ export class ShoppingCart extends Component<ShoppingCartComponentData> {
     }
 
     set productsList(value: HTMLElement[]){
-        let children = Array.from(this._basketListContainerElement.children);
-        children.forEach((element, index) => this._basketListContainerElement.removeChild(element));
-        Array.from(value).forEach(element => this._basketListContainerElement.append(element));
+        this._basketListContainerElement.replaceChildren(...value.map((item: HTMLElement, index:number) => {
+            this.setText(item.querySelector(productCartItemSettings.basketItemIndex), String(index + 1));
+            return item;
+        }));
         this._basketButtonElement.disabled = !(value.length > 0);
     }
 
